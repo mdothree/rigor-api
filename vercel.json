@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/payment/webhook",
+      "dest": "/api/payment/webhook.js"
+    },
+    {
+      "src": "/api/payment/create-session",
+      "dest": "/api/payment/create-session.js"
+    },
+    {
+      "src": "/api/payment/create-embedded-session",
+      "dest": "/api/payment/create-embedded-session.js"
+    },
+    {
+      "src": "/api/payment/portal",
+      "dest": "/api/payment/portal.js"
+    },
+    {
+      "src": "/api/analyze",
+      "dest": "/api/analyze/handler.js"
+    },
+    {
+      "src": "/api/cover-letter",
+      "dest": "/api/cover-letter/handler.js"
+    },
+    {
+      "src": "/api/interview-questions",
+      "dest": "/api/interview/questions.js"
+    },
+    {
+      "src": "/api/interview-feedback",
+      "dest": "/api/interview/feedback.js"
+    },
+    {
+      "src": "/api/linkedin-optimize",
+      "dest": "/api/linkedin/optimize.js"
+    },
+    {
+      "src": "/api/salary-strategy",
+      "dest": "/api/salary/strategy.js"
+    },
+    {
+      "src": "/api/portfolio-review",
+      "dest": "/api/portfolio/review.js"
+    },
+    {
+      "src": "/api/networking-email",
+      "dest": "/api/networking/email.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "functions": {
+    "api/payment/webhook.js": {
+      "bodyParser": false
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://js.stripe.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://api.anthropic.com https://js.stripe.com; frame-src https://js.stripe.com;"
+        }
+      ]
+    }
+  ]
+}
