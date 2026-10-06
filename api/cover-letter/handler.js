@@ -4,11 +4,12 @@
  */
 const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
+const { withCors } = require("../_middleware/cors");
 const admin = require("../lib/firebase");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-module.exports = requireAuth(async (req, res) => {
+module.exports = withCors(requireAuth(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { resume, jobDescription, tone = "professional", companyName, hiringManager } = req.body;
@@ -66,4 +67,4 @@ ${jobDescription.slice(0, 2000)}${companyName ? `\n\nCOMPANY: ${companyName}` : 
     console.error("cover-letter error:", err);
     res.status(500).json({ error: err.message });
   }
-});
+}));

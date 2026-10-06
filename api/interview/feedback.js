@@ -4,10 +4,11 @@
  */
 const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
+const { withCors } = require("../_middleware/cors");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-module.exports = requireAuth(async (req, res) => {
+module.exports = withCors(requireAuth(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { question, answer, role = "" } = req.body;
@@ -41,4 +42,4 @@ Respond ONLY with valid JSON:
     console.error("interview/feedback error:", err);
     res.status(500).json({ error: err.message });
   }
-});
+}));

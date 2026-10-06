@@ -4,11 +4,12 @@
  */
 const Anthropic = require("@anthropic-ai/sdk");
 const { verifyToken } = require("../_middleware/auth");
+const { withCors } = require("../_middleware/cors");
 const admin = require("../lib/firebase");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-module.exports = async (req, res) => {
+module.exports = withCors(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
@@ -66,4 +67,4 @@ ${jobDescription.slice(0, 2000)}`
     console.error("analyze error:", err);
     res.status(500).json({ error: err.message });
   }
-};
+});

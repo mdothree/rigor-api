@@ -3,6 +3,7 @@
  */
 const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
+const { withCors } = require("../_middleware/cors");
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const EMAIL_TYPES = {
@@ -14,7 +15,7 @@ const EMAIL_TYPES = {
   "reconnect":      "a reconnection message after time apart",
 };
 
-module.exports = requireAuth(async (req, res) => {
+module.exports = withCors(requireAuth(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const { emailType, recipientName, recipientTitle, recipientCompany, connectionPoint, yourName, yourRole, yourGoal, context } = req.body;
   if (!recipientName) return res.status(400).json({ error: "recipientName is required" });
@@ -43,4 +44,4 @@ Respond ONLY with valid JSON:
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+}));
