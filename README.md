@@ -43,3 +43,13 @@ vercel --prod
 Register `https://your-api.vercel.app/api/payment/webhook` in your Stripe Dashboard.
 Events handled: `checkout.session.completed`, `customer.subscription.updated`,
 `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`.
+
+### Via the MDO3D stripe-hub
+
+`POST /api/payment/webhook-forwarded` accepts `{ "eventId": "evt_..." }` from
+`projects/mdo3d/stripe-hub`. It re-fetches the event with `STRIPE_SECRET_KEY`, handles
+it only if it belongs to rigor (`metadata.serviceName === "rigor"`, set on new checkout
+sessions and subscriptions, or a price id in `STRIPE_PRO_PRICE_IDS` /
+`STRIPE_TEAM_PRICE_IDS`), and runs the same handler as the direct webhook
+(`api/lib/stripeEvents.js`). Once the hub is verified, the per-app endpoint above can be
+removed from the Stripe dashboard.

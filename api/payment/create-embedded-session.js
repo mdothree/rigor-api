@@ -48,11 +48,11 @@ module.exports = withCors(requireAuth(withRateLimit(async (req, res) => {
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       return_url: `${origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      metadata: { userId },
+      metadata: { userId, serviceName: "rigor" },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
       subscription_data: {
-        metadata: { userId }
+        metadata: { userId, serviceName: "rigor" }
       }
     });
 

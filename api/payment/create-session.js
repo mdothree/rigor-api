@@ -24,12 +24,12 @@ module.exports = async (req, res) => {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl || `${req.headers.origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${req.headers.origin}/cancel.html`,
-      metadata: { userId },
+      metadata: { userId, serviceName: "rigor" },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
       customer_creation: "always",
       subscription_data: {
-        metadata: { userId }
+        metadata: { userId, serviceName: "rigor" }
       }
     });
 

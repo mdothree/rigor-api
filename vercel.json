@@ -12,6 +12,10 @@
       "dest": "/api/payment/webhook.js"
     },
     {
+      "src": "/api/payment/webhook-forwarded",
+      "dest": "/api/payment/webhook-forwarded.js"
+    },
+    {
       "src": "/api/payment/create-session",
       "dest": "/api/payment/create-session.js"
     },
