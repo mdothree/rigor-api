@@ -5,11 +5,15 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
+const { withRateLimit, withInputCaps } = require("../_middleware/limits");
 const admin = require("../lib/firebase");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-module.exports = withCors(requireAuth(async (req, res) => {
+// Server-side length caps (truncate) mirror the client limits.
+const CAPS = { resume: 3000, jobDescription: 2000, tone: 20, companyName: 200, hiringManager: 200 };
+
+module.exports = withCors(requireAuth(withRateLimit(withInputCaps(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { resume, jobDescription, tone = "professional", companyName, hiringManager } = req.body;
@@ -67,4 +71,4 @@ ${jobDescription.slice(0, 2000)}${companyName ? `\n\nCOMPANY: ${companyName}` : 
     console.error("cover-letter error:", err);
     res.status(500).json({ error: err.message });
   }
-}));
+}, CAPS), { name: "cover-letter" })));

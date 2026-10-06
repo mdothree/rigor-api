@@ -4,9 +4,13 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
+const { withRateLimit, withInputCaps } = require("../_middleware/limits");
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-module.exports = withCors(requireAuth(async (req, res) => {
+// Server-side length caps (truncate) mirror the client limits.
+const CAPS = { portfolioUrl: 500, portfolioDesc: 4000, targetRole: 200, targetCompany: 200, careerStage: 40 };
+
+module.exports = withCors(requireAuth(withRateLimit(withInputCaps(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const { portfolioUrl, portfolioDesc, targetRole, targetCompany, careerStage } = req.body;
   if (!portfolioDesc && !portfolioUrl) return res.status(400).json({ error: "Portfolio description or URL required" });
@@ -40,4 +44,4 @@ Respond ONLY with valid JSON:
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}));
+}, CAPS), { name: "portfolio-review" })));
