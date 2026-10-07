@@ -64,11 +64,6 @@
       "dest": "/api/$1"
     }
   ],
-  "functions": {
-    "api/payment/webhook.js": {
-      "bodyParser": false
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
