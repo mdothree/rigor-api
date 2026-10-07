@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
+      "src": "api/{payment,analyze,cover-letter,interview,linkedin,networking,portfolio,salary}/*.js",
       "use": "@vercel/node"
     }
   ],
@@ -14,10 +14,6 @@
     {
       "src": "/api/payment/webhook-forwarded",
       "dest": "/api/payment/webhook-forwarded.js"
-    },
-    {
-      "src": "/api/payment/create-session",
-      "dest": "/api/payment/create-session.js"
     },
     {
       "src": "/api/payment/create-embedded-session",
