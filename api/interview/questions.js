@@ -6,13 +6,16 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
 const { withRateLimit, withInputCaps } = require("../_middleware/limits");
+const { withQuota } = require("../lib/quota");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // Server-side length caps (truncate) mirror the client limits.
 const CAPS = { role: 200, company: 200, type: 40, resume: 500 };
+// Server-side monthly quota (lib/quota.js): reserved before the model call, released on error.
+const QUOTA = { counter: "analyses", toolCounter: "interviewSessions" };
 
-module.exports = withCors(requireAuth(withRateLimit(withInputCaps(async (req, res) => {
+module.exports = withCors(requireAuth(withRateLimit(withInputCaps(withQuota(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { role, company, type = "behavioral", resume = "" } = req.body;
@@ -42,4 +45,4 @@ Respond ONLY with valid JSON:
     console.error("interview/questions error:", err);
     res.status(500).json({ error: err.message });
   }
-}, CAPS), { name: "interview-questions" })));
+}, QUOTA), CAPS), { name: "interview-questions" })));

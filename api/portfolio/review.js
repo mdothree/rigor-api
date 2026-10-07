@@ -5,12 +5,15 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
 const { withRateLimit, withInputCaps } = require("../_middleware/limits");
+const { withQuota } = require("../lib/quota");
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // Server-side length caps (truncate) mirror the client limits.
 const CAPS = { portfolioUrl: 500, portfolioDesc: 4000, targetRole: 200, targetCompany: 200, careerStage: 40 };
+// Server-side monthly quota (lib/quota.js): reserved before the model call, released on error.
+const QUOTA = { counter: "analyses", toolCounter: "portfolioReviews" };
 
-module.exports = withCors(requireAuth(withRateLimit(withInputCaps(async (req, res) => {
+module.exports = withCors(requireAuth(withRateLimit(withInputCaps(withQuota(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const { portfolioUrl, portfolioDesc, targetRole, targetCompany, careerStage } = req.body;
   if (!portfolioDesc && !portfolioUrl) return res.status(400).json({ error: "Portfolio description or URL required" });
@@ -44,4 +47,4 @@ Respond ONLY with valid JSON:
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}, CAPS), { name: "portfolio-review" })));
+}, QUOTA), CAPS), { name: "portfolio-review" })));

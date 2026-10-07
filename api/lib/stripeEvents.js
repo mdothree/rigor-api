@@ -5,6 +5,12 @@
  *
  * Idempotency: every write is a merge-set of the same values for the same event,
  * and payment_events rows are keyed by event id, so reprocessing an event is safe.
+ * Ordering: Stripe does not guarantee delivery order, so subscription writes go
+ * through writeSub(), which skips an event older than the last one applied
+ * (lastEventCreated) — a late invoice.paid can't resurrect a canceled plan.
+ * Unknown prices: resolvePlan() returns null for a price that is not in
+ * STRIPE_PRO_PRICE_IDS / STRIPE_TEAM_PRICE_IDS and nothing is granted (the MDO3
+ * Stripe account sells other products; they must never unlock rigor Pro).
  */
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const admin = require("./firebase");
@@ -20,21 +26,23 @@ async function handleStripeEvent(event) {
       const session = event.data.object;
       const userId = session.metadata?.userId;
       if (!userId || userId === "anonymous") break;
+      if (session.mode !== "subscription" || !session.subscription) break;
+      if (!["paid", "no_payment_required"].includes(session.payment_status)) break;
 
       // Get subscription details
       const subscription = await stripe.subscriptions.retrieve(session.subscription);
       const priceId = subscription.items.data[0]?.price?.id;
       const plan = resolvePlan(priceId);
+      if (!plan) { console.warn(`checkout ${session.id}: unknown price ${priceId}; not granting`); break; }
 
-      await db.collection("subscriptions").doc(userId).set({
+      await writeSub(userId, event, {
         plan,
-        status: "active",
+        status: subscription.status || "active",
         stripeCustomerId: session.customer,
         stripeSubscriptionId: session.subscription,
         stripePriceId: priceId,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString()
+      });
 
       await logEvent(event.id, userId, "subscription_created", { plan });
       break;
@@ -48,16 +56,16 @@ async function handleStripeEvent(event) {
 
       const priceId = sub.items.data[0]?.price?.id;
       const plan = resolvePlan(priceId);
-      const status = sub.status; // active, past_due, canceled, etc.
+      const status = sub.status; // active, trialing, past_due, canceled, etc.
+      const paidNow = (status === "active" || status === "trialing") && plan;
 
-      await db.collection("subscriptions").doc(userId).set({
-        plan: status === "active" ? plan : "free",
+      await writeSub(userId, event, {
+        plan: paidNow ? plan : "free",
         status,
         stripePriceId: priceId,
         currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
-        cancelAtPeriodEnd: sub.cancel_at_period_end,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        cancelAtPeriodEnd: sub.cancel_at_period_end
+      });
 
       await logEvent(event.id, userId, "subscription_updated", { plan, status });
       break;
@@ -69,12 +77,11 @@ async function handleStripeEvent(event) {
       const userId = await getUserIdFromCustomer(sub.customer);
       if (!userId) break;
 
-      await db.collection("subscriptions").doc(userId).set({
+      await writeSub(userId, event, {
         plan: "free",
         status: "canceled",
-        canceledAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        canceledAt: admin.firestore.FieldValue.serverTimestamp()
+      });
 
       await logEvent(event.id, userId, "subscription_canceled", {});
       break;
@@ -86,11 +93,10 @@ async function handleStripeEvent(event) {
       const userId = await getUserIdFromCustomer(invoice.customer);
       if (!userId) break;
 
-      await db.collection("subscriptions").doc(userId).set({
+      await writeSub(userId, event, {
         status: "active",
-        lastPaymentDate: new Date(invoice.status_transitions.paid_at * 1000).toISOString(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        lastPaymentDate: new Date(invoice.status_transitions.paid_at * 1000).toISOString()
+      });
       break;
     }
 
@@ -100,10 +106,9 @@ async function handleStripeEvent(event) {
       const userId = await getUserIdFromCustomer(invoice.customer);
       if (!userId) break;
 
-      await db.collection("subscriptions").doc(userId).set({
-        status: "past_due",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      await writeSub(userId, event, {
+        status: "past_due"
+      });
 
       await logEvent(event.id, userId, "payment_failed", { invoiceId: invoice.id });
       break;
@@ -144,7 +149,27 @@ function resolvePlan(priceId) {
   const teamPriceIds = (process.env.STRIPE_TEAM_PRICE_IDS || "").split(",").map(s => s.trim());
   if (teamPriceIds.includes(priceId)) return "team";
   if (proPriceIds.includes(priceId)) return "pro";
-  return "pro"; // default to pro for any paid plan
+  return null; // unknown price: grant nothing
+}
+
+// Merge-write subscriptions/{userId} unless a newer Stripe event was already applied.
+async function writeSub(userId, event, data) {
+  const ref = db.collection("subscriptions").doc(userId);
+  const created = Number(event?.created) || 0;
+  await db.runTransaction(async t => {
+    const snap = await t.get(ref);
+    const last = snap.exists ? Number(snap.data().lastEventCreated) || 0 : 0;
+    if (created && last && created < last) {
+      console.log(`stale ${event.type} ${event.id} for ${userId} skipped (${created} < ${last})`);
+      return;
+    }
+    t.set(ref, {
+      ...data,
+      lastEventCreated: Math.max(created, last),
+      lastEventId: event?.id || null,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  });
 }
 
 async function getUserIdFromCustomer(customerId) {
@@ -164,4 +189,4 @@ async function logEvent(eventId, userId, type, data) {
   else await db.collection("payment_events").add(doc);
 }
 
-module.exports = { handleStripeEvent, isRigorEvent, SERVICE_NAME, stripe };
+module.exports = { handleStripeEvent, isRigorEvent, resolvePlan, SERVICE_NAME, stripe };

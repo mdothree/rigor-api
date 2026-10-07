@@ -33,6 +33,10 @@ vercel --prod
 ## Security
 
 - Firebase token verification on all protected routes via `requireAuth` middleware
+  (anonymous-auth tokens rejected; optional App Check via `APPCHECK_ENFORCE`)
+- Server-side monthly quota on every AI route (`api/lib/quota.js`): free plan gets
+  `RIGOR_FREE_MONTHLY_LIMIT` (default 3) generations/month shared across all tools,
+  stored in `usage/{uid}_{YYYY-MM}`; HTTP 402 `quota_exceeded` when used up
 - Rate limiting on free tier endpoints
 - Stripe webhook signature verification
 - All secrets server-side only — never in frontend code

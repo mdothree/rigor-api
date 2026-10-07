@@ -6,13 +6,16 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
 const { withRateLimit, withInputCaps } = require("../_middleware/limits");
+const { withQuota } = require("../lib/quota");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // Server-side length caps (truncate) mirror the client limits.
 const CAPS = { headline: 300, about: 3000, experience: 4000, skills: 1000, targetRole: 200, targetIndustry: 200, targetJD: 500 };
+// Server-side monthly quota (lib/quota.js): reserved before the model call, released on error.
+const QUOTA = { counter: "analyses", toolCounter: "linkedinOptimizations" };
 
-module.exports = withCors(requireAuth(withRateLimit(withInputCaps(async (req, res) => {
+module.exports = withCors(requireAuth(withRateLimit(withInputCaps(withQuota(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { headline, about, experience, skills, targetRole, targetIndustry, targetJD } = req.body;
@@ -51,4 +54,4 @@ Respond ONLY with valid JSON:
     console.error("linkedin/optimize error:", err);
     res.status(500).json({ error: err.message });
   }
-}, CAPS), { name: "linkedin-optimize" })));
+}, QUOTA), CAPS), { name: "linkedin-optimize" })));

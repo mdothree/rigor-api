@@ -24,7 +24,7 @@ function withCors(handler) {
     if (origin && ALLOWED_ORIGINS.has(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Firebase-AppCheck");
       res.setHeader("Access-Control-Max-Age", "600");
     }
     res.setHeader("Vary", "Origin");

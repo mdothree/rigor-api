@@ -8,8 +8,8 @@
  *    request body; the webhook grants the plan to metadata.userId.
  *  - CORS uses the shared explicit allowlist (withCors) instead of reflecting any
  *    Origin, and answers the preflight before requireAuth.
- *  - priceId must be one of the configured paid prices when STRIPE_PRO_PRICE_IDS /
- *    STRIPE_TEAM_PRICE_IDS are set (the webhook maps any unknown price to "pro").
+ *  - priceId must be one of STRIPE_PRO_PRICE_IDS / STRIPE_TEAM_PRICE_IDS; with
+ *    neither set, checkout is refused (503) instead of selling any account price.
  */
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { requireAuth } = require("../_middleware/auth");
@@ -35,8 +35,11 @@ module.exports = withCors(requireAuth(withRateLimit(async (req, res) => {
     const userId = req.user.uid; // verified token, not the body
     if (!priceId || typeof priceId !== "string") return res.status(400).json({ error: "Missing priceId" });
 
+    // Fail closed: the MDO3 Stripe account sells other recurring products, and only
+    // configured rigor prices may be bought here (the webhook grants nothing else).
     const allowed = allowedPriceIds();
-    if (allowed.length && !allowed.includes(priceId)) {
+    if (!allowed.length) return res.status(503).json({ error: "Checkout is not configured yet" });
+    if (!allowed.includes(priceId)) {
       return res.status(400).json({ error: "Unknown priceId" });
     }
 

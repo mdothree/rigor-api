@@ -6,13 +6,16 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
 const { withRateLimit, withInputCaps } = require("../_middleware/limits");
+const { withQuota } = require("../lib/quota");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // Server-side length caps (truncate) mirror the client limits.
 const CAPS = { jobTitle: 200, company: 200, offeredSalary: 50, location: 200, benefits: 1000, yearsExp: 10, currentSalary: 50, targetSalary: 50, competing: 1000, achievements: 2000 };
+// Server-side monthly quota (lib/quota.js): reserved before the model call, released on error.
+const QUOTA = { counter: "analyses", toolCounter: "salaryStrategies" };
 
-module.exports = withCors(requireAuth(withRateLimit(withInputCaps(async (req, res) => {
+module.exports = withCors(requireAuth(withRateLimit(withInputCaps(withQuota(async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { jobTitle, company, offeredSalary, location, benefits, yearsExp, currentSalary, targetSalary, competing, achievements } = req.body;
@@ -57,4 +60,4 @@ Respond ONLY with valid JSON:
     console.error("salary/strategy error:", err);
     res.status(500).json({ error: err.message });
   }
-}, CAPS), { name: "salary-strategy" })));
+}, QUOTA), CAPS), { name: "salary-strategy" })));
