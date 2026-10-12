@@ -8,12 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/(api/)?health",
+      "dest": "/api/payment/account.js?op=health"
+    },
+    {
       "src": "/api/payment/webhook",
       "dest": "/api/payment/webhook.js"
     },
     {
       "src": "/api/payment/webhook-forwarded",
-      "dest": "/api/payment/webhook-forwarded.js"
+      "dest": "/api/payment/webhook.js?src=hub"
     },
     {
       "src": "/api/payment/create-embedded-session",
@@ -21,7 +25,11 @@
     },
     {
       "src": "/api/payment/portal",
-      "dest": "/api/payment/portal.js"
+      "dest": "/api/payment/account.js?op=portal"
+    },
+    {
+      "src": "/api/payment/confirm",
+      "dest": "/api/payment/account.js?op=confirm"
     },
     {
       "src": "/api/analyze",

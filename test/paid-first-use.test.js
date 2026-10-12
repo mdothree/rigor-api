@@ -29,6 +29,7 @@ beforeEach(() => {
   process.env.RIGOR_FREE_FEEDBACK_LIMIT = "30";
   process.env.STRIPE_PRO_PRICE_IDS = "price_pro_stub";
   process.env.STRIPE_TEAM_PRICE_IDS = "price_team_stub";
+  process.env.STRIPE_PUBLISHABLE_KEY = "pk_test_dummy"; // Q7: checkout returns it (503 without)
 });
 
 test("allowance is a single config value, 0 by default, legacy RIGOR_FREE_* ignored", () => {
