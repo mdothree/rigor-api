@@ -6,7 +6,7 @@
  *     mdo3d-career (firebase-admin verifyIdToken checks signature, expiry, aud/iss).
  *   - 401 for anonymous-auth tokens: rigor only offers email/password accounts, and
  *     anonymous tokens can be minted by anyone with the public web API key, which
- *     would reset the free quota per throwaway uid.
+ *     would let anyone mint throwaway uids against the paywall.
  *   - App Check: when the client sends X-Firebase-AppCheck it is verified; when
  *     APPCHECK_ENFORCE=true a missing/invalid token is a 401. Default: not enforced.
  *   - Handler errors are NOT reported as "Invalid token" (the handler runs outside

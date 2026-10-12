@@ -30,14 +30,23 @@ cp .env.example .env.local
 vercel --prod
 ```
 
+## Tests
+
+```bash
+npm test   # node:test, dependency-free (Firebase/Stripe/Anthropic are stubbed; no network)
+```
+
 ## Security
 
 - Firebase token verification on all protected routes via `requireAuth` middleware
   (anonymous-auth tokens rejected; optional App Check via `APPCHECK_ENFORCE`)
-- Server-side monthly quota on every AI route (`api/lib/quota.js`): free plan gets
-  `RIGOR_FREE_MONTHLY_LIMIT` (default 3) generations/month shared across all tools,
-  stored in `usage/{uid}_{YYYY-MM}`; HTTP 402 `quota_exceeded` when used up
-- Rate limiting on free tier endpoints
+- Paid from first use on every AI route (`api/lib/quota.js`, JARVIS #94): an account
+  without an active Pro/Team subscription gets `INCLUDED_ANALYSES` (0) calls, so every
+  unsubscribed call returns HTTP 402 `{"error":"subscription_required","checkout":true}`.
+  The allowance is one config value (`RIGOR_INCLUDED_ANALYSES` overrides it); the old
+  `RIGOR_FREE_*` env vars are ignored. Usage is still counted in `usage/{uid}_{YYYY-MM}`.
+  Early access is via Stripe promotion codes (`allow_promotion_codes` on checkout).
+- Per-user rate limiting on every AI and checkout endpoint
 - Stripe webhook signature verification
 - All secrets server-side only — never in frontend code
 - Security headers (CSP, HSTS, X-Frame-Options) applied globally
