@@ -72,7 +72,7 @@ module.exports = withCors(requireAuth(withRateLimit(async (req, res) => {
 
     const existing = await admin.firestore().collection("subscriptions").doc(userId).get();
     if (existing.exists && isPaidSubscription(existing.data())) {
-      return res.status(409).json({ error: "already_subscribed", message: "This account already has an active Rigor plan. Use Manage Plan to change it." });
+      return res.status(409).json({ error: "This account already has an active Rigor plan. Use Manage Plan to change it.", code: "already_subscribed" });
     }
 
     const session = await stripe.checkout.sessions.create({
