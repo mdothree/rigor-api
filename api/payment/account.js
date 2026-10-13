@@ -43,6 +43,11 @@ function op(req) {
 // ─── health ───────────────────────────────────────────────────────────────────
 async function health(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  // L-RES-03: the tool pages read this cross-origin (apiReachable() in public/js/config/env.js)
+  // before checkout opens, so allow-listed rigor.design origins get CORS on GET. Booleans only.
+  const origin = req.headers && req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin");
   if (req.method !== "GET" && req.method !== "HEAD") return res.status(405).json({ error: "Method not allowed" });
   const checks = {};
   for (const [k, names] of Object.entries(REQUIRED_ENV)) checks[k] = names.every(n => !!process.env[n]);

@@ -64,6 +64,13 @@ test("health: 200 with every required env; 503 naming only booleans when one is 
   assert.equal(r.statusCode, 503, "test secret + live publishable key is a misconfiguration");
 });
 
+test("health: CORS for allow-listed rigor.design origins only (L-RES-03, read by apiReachable)", async () => {
+  let r = await post(account, { method: "GET", url: "/health", query: { op: "health" }, headers: { origin: "https://resume.rigor.design" } });
+  assert.equal(r.statusCode, 200); assert.equal(r.headers["access-control-allow-origin"], "https://resume.rigor.design");
+  r = await post(account, { method: "GET", url: "/health", query: { op: "health" }, headers: { origin: "https://evil.example" } });
+  assert.equal(r.headers["access-control-allow-origin"], undefined);
+});
+
 test("OPTIONS preflight is 204 before auth on checkout and confirm", async () => {
   for (const [h, url, query] of [[checkout, "/api/payment/create-embedded-session", {}], [account, "/api/payment/confirm", { op: "confirm" }]]) {
     const r = await post(h, { method: "OPTIONS", url, query });
