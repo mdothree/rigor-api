@@ -62,7 +62,9 @@ async function health(req, res) {
     checks.firebaseInit = false;
   }
   const ok = Object.values(checks).every(Boolean);
-  return res.status(ok ? 200 : 503).json({ ok, service: "rigor-api", checks });
+  // environment = Vercel's VERCEL_ENV (production|preview|development); RIGOR_GO.sh requires "production".
+  const environment = process.env.VERCEL_ENV || "unknown";
+  return res.status(ok ? 200 : 503).json({ ok, service: "rigor-api", environment, checks });
 }
 
 // ─── portal ───────────────────────────────────────────────────────────────────

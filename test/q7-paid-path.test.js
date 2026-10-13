@@ -55,6 +55,10 @@ beforeEach(() => { reset(); Object.assign(process.env, ENV); delete process.env.
 test("health: 200 with every required env; 503 naming only booleans when one is missing", async () => {
   let r = await post(account, { method: "GET", url: "/health", query: { op: "health" } });
   assert.equal(r.statusCode, 200); assert.equal(r.body.ok, true);
+  const prevEnv = process.env.VERCEL_ENV; process.env.VERCEL_ENV = "production";
+  r = await post(account, { method: "GET", url: "/health", query: { op: "health" } });
+  assert.equal(r.body.environment, "production", "RIGOR_GO.sh checks environment=production");
+  if (prevEnv === undefined) delete process.env.VERCEL_ENV; else process.env.VERCEL_ENV = prevEnv;
   delete process.env.STRIPE_WEBHOOK_SECRET;
   r = await post(account, { method: "GET", url: "/health", query: { op: "health" } });
   assert.equal(r.statusCode, 503); assert.equal(r.body.checks.webhook, false);
