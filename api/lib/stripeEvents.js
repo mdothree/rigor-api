@@ -156,7 +156,8 @@ function isRigorEvent(event) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 // Rigor's Stripe Payment Link(s) (public ids, not secrets). Default = the live
-// "Rigor Pro" $9.99/mo link; override with RIGOR_PAYMENT_LINK_IDS (comma-separated).
+// original "Rigor Pro" link (it sells the pre-2026-10-14 price; kept so its payers are still recognised);
+// override with RIGOR_PAYMENT_LINK_IDS (comma-separated). New checkouts use STRIPE_PRO_PRICE_IDS ($10/mo).
 const DEFAULT_PAYMENT_LINK_IDS = "plink_1TEwCoCRLa19N9qBx7eNHK7D";
 function paymentLinkIds() {
   return (process.env.RIGOR_PAYMENT_LINK_IDS || DEFAULT_PAYMENT_LINK_IDS)
