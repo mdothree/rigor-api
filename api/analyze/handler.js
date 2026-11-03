@@ -9,6 +9,7 @@ const { requireAuth } = require("../_middleware/auth");
 const { withCors } = require("../_middleware/cors");
 const { withRateLimit, withInputCaps } = require("../_middleware/limits");
 const { withQuota } = require("../lib/quota");
+const { validateAnalysis } = require("../lib/analysisSchema");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -51,11 +52,17 @@ ${jobDescription.slice(0, 2000)}`
     const text = message.content[0].text.trim();
     const clean = text.replace(/```json|```/g, "").trim();
     const data = JSON.parse(clean);
+    // FS-NF-03: valid JSON is not a valid analysis. An unusable shape is a failed (502) analysis, so the reserved use is released.
+    const checked = validateAnalysis(data);
+    if (!checked.ok) {
+      console.error("analyze: unusable model output:", checked.error);
+      return res.status(502).json({ error: "The analysis service returned an unusable result. Please try again." });
+    }
 
     // Usage is reserved/counted by withQuota (lib/quota.js), the single source of
     // truth; firestore.rules deny client writes to usage/.
 
-    res.status(200).json(data);
+    res.status(200).json(checked.data);
   } catch (err) {
     console.error("analyze error:", err);
     res.status(500).json({ error: err.message });
