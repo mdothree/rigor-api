@@ -1,5 +1,5 @@
 /**
- * _middleware/cors.js — CORS for the rigor.design frontends.
+ * _middleware/cors.js — CORS for the rigor.design and rigorcareer.com frontends.
  * The tool frontends (resume./cover./interview./... .rigor.design) call
  * https://api.rigor.design cross-origin with an Authorization header, which
  * triggers a preflight OPTIONS. Answer it here, BEFORE requireAuth (which would
@@ -15,7 +15,17 @@ const ALLOWED_ORIGINS = new Set([
   "https://linkedin.rigor.design",
   "https://networking.rigor.design",
   "https://portfolio.rigor.design",
-  "https://salary.rigor.design"
+  "https://salary.rigor.design",
+  // rigorcareer.com move: both host sets are served during the transition.
+  "https://rigorcareer.com",
+  "https://www.rigorcareer.com",
+  "https://resume.rigorcareer.com",
+  "https://cover.rigorcareer.com",
+  "https://interview.rigorcareer.com",
+  "https://linkedin.rigorcareer.com",
+  "https://networking.rigorcareer.com",
+  "https://portfolio.rigorcareer.com",
+  "https://salary.rigorcareer.com"
 ]);
 
 function withCors(handler) {
